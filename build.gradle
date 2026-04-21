@@ -1,0 +1,240 @@
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile
+
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { url = "https://repo.grails.org/grails/restricted" }
+    }
+    dependencies { // Not Published to Gradle Plugin Portal
+        classpath "cloud.wondrify:asset-pipeline-gradle"
+        classpath platform("org.apache.grails:grails-bom:$grailsVersion")
+        classpath "org.apache.grails:grails-data-hibernate5"
+        classpath "org.apache.grails:grails-gradle-plugins"
+    }
+}
+
+plugins {
+    id "groovy"
+    id "com.bmuschko.docker-remote-api" version "9.4.0"
+    id "com.avast.gradle.docker-compose" version "0.17.12"
+    id "org.asciidoctor.jvm.convert" version "4.0.5"
+    id "codenarc"
+    id "eclipse"
+    id "idea"
+}
+
+// Not Published to Gradle Plugin Portal
+apply plugin: "org.apache.grails.gradle.grails-web"
+apply plugin: "org.apache.grails.gradle.grails-gsp"
+apply plugin: "cloud.wondrify.asset-pipeline"
+
+group = "dueunoapp"
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url = "https://repo.grails.org/grails/restricted" }
+    maven { url = "https://ossrh-staging-api.central.sonatype.com/service/local/" }
+//    maven {
+//        url = "https://maven.pkg.github.com/dueuno-projects/dueuno-solutions"
+//        credentials {
+//            username = findProperty("localGradlePropertiesGitHubDueunoUsername") ?: System.getenv("GITHUB_DUEUNO_USERNAME")
+//            password = findProperty("localGradlePropertiesGitHubDueunoPassword") ?: System.getenv("GITHUB_DUEUNO_TOKEN")
+//        }
+//    }
+}
+
+configurations.configureEach {
+    resolutionStrategy {
+        // Fetch dependencies as soon as they are released
+        cacheChangingModulesFor(0, "seconds")
+    }
+}
+
+dependencies {
+    profile "org.apache.grails.profiles:web"
+    testAndDevelopmentOnly "org.webjars.npm:bootstrap"
+    testAndDevelopmentOnly "org.webjars.npm:bootstrap-icons"
+    testAndDevelopmentOnly "org.webjars.npm:jquery"
+    implementation platform("org.apache.grails:grails-bom:$grailsVersion")
+    implementation "org.apache.grails:grails-core"
+    implementation "org.apache.grails:grails-data-hibernate5"
+    implementation "org.apache.grails:grails-databinding"
+    implementation "org.apache.grails:grails-events"
+    implementation "org.apache.grails:grails-gsp"
+    implementation "org.apache.grails:grails-interceptors"
+    implementation "org.apache.grails:grails-layout"
+    implementation "org.apache.grails:grails-logging"
+    implementation "org.apache.grails:grails-rest-transforms"
+    implementation "org.apache.grails:grails-scaffolding"
+    implementation "org.apache.grails:grails-services"
+    implementation "org.apache.grails:grails-url-mappings"
+    implementation "org.apache.grails:grails-web-boot"
+    implementation "org.springframework.boot:spring-boot-autoconfigure"
+    implementation "org.springframework.boot:spring-boot-starter"
+    implementation "org.springframework.boot:spring-boot-starter-actuator"
+    implementation "org.springframework.boot:spring-boot-starter-logging"
+    implementation "org.springframework.boot:spring-boot-starter-tomcat"
+    implementation "org.springframework.boot:spring-boot-starter-validation"
+    console "org.apache.grails:grails-console"
+    runtimeOnly "cloud.wondrify:asset-pipeline-grails"
+    runtimeOnly "com.h2database:h2"
+    runtimeOnly "com.zaxxer:HikariCP"
+    runtimeOnly "org.fusesource.jansi:jansi"
+    integrationTestImplementation testFixtures("org.apache.grails:grails-geb")
+    testImplementation "org.apache.grails:grails-testing-support-datamapping"
+    testImplementation "org.apache.grails:grails-testing-support-web"
+    testImplementation "org.spockframework:spock-core"
+
+    // Comment this if you need to create tenants at runtime in dev environment
+    // Spring Boot DevTools may cause performance slowdowns or compatibility issues on larger applications
+    developmentOnly "org.springframework.boot:spring-boot-devtools"
+
+    // DUEUNO
+    implementation "org.dueuno:dueuno-core:${dueunoVersion}"
+//    implementation "com.dueuno:dueuno-printing:${dueunoSolutionsVersion}"
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(javaVersion)
+    }
+}
+
+tasks.withType(GroovyCompile).configureEach {
+    groovyOptions.optimizationOptions.indy = false
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+}
+
+bootRun {
+    jvmArgs(
+            // Fixed RAM size
+            // "-Xms4g",
+            // "-Xmx4g",
+
+            // Safe proportional RAM size
+            // "-XX:InitialRAMPercentage=25",
+            // "-XX:MaxRAMPercentage=70",
+
+            // Defaults
+            "-XX:+UseG1GC",
+            "-XX:+UseStringDeduplication",
+            "-XX:InitiatingHeapOccupancyPercent=40",
+    )
+}
+
+assets {
+    minifyCss = true
+    minifyJs = true
+    minifyOptions = [
+            //SIMPLE (default) or ADVANCED or WHITESPACE_ONLY
+            optimizationLevel: "SIMPLE",
+    ]
+    excludes = [
+            "webjars/**",
+    ]
+}
+
+// CODE ANALISYS
+codenarc {
+    toolVersion = "3.4.0"
+    ignoreFailures = true
+    configFile = file("${rootDir}/codenarc/config.groovy")
+    reportsDir = file("$rootDir/codenarc/${project.name}")
+}
+
+// DOCUMENTATION
+compileGroovy.finalizedBy(asciidoctor)
+asciidoctor {
+    baseDirFollowsSourceDir()
+    attributes = [
+            "application-name"  : project.name,
+            "revnumber"         : project.version,
+            "grails-version"    : grailsVersion,
+            "source-highlighter": "coderay",
+            "icons"             : "font",
+            "toc"               : "left",
+            "toclevels"         : 3,
+    ]
+    outputOptions {
+        backends = ["html5"] // or ["html5", "pdf"]
+    }
+    doLast {
+        copy {
+            from("build/docs/asciidoc/")
+            into "${projectDir}/docs/"
+        }
+    }
+}
+
+ext {
+    dockerTag = "${project.group}/${project.name}:${project.version}".toLowerCase()
+    dockerBuildDir = layout.buildDirectory.dir("docker")
+}
+
+/**
+ * Copy files + bootJar into docker build dir
+ */
+tasks.register('prepareDocker', Copy) {
+    description = "Copy files from src/main/docker and application jar to Docker temporal build directory"
+    group = "Docker"
+
+    dependsOn(tasks.named('bootJar'))
+
+    from("src/main/docker")
+
+    from(
+            tasks.named('bootJar').flatMap { it.archiveFile }
+    )
+
+    into(dockerBuildDir)
+}
+
+/**
+ * Create Dockerfile
+ */
+tasks.register('createDockerfile', Dockerfile) {
+    description = "Create a Dockerfile file"
+    group = "Docker"
+
+    dependsOn(tasks.named('prepareDocker'))
+
+    destFile.set(dockerBuildDir.map { it.file("Dockerfile") })
+
+    from("eclipse-temurin:${javaVersion}")
+    workingDir("/app")
+
+    def bootJarTask = tasks.named('bootJar')
+    def filenameProvider = bootJarTask.flatMap { it.archiveFileName }
+    def jarName = filenameProvider.get()
+
+    copyFile(jarName, "/app/${jarName}")
+
+    entryPoint("java", "-jar", "/app/${jarName}")
+
+    exposePort(8080)
+}
+
+/**
+ * Build Docker image
+ */
+tasks.register('dockerBuildImage', DockerBuildImage) {
+    description = "Create Docker image to run the Grails application"
+    group = "Docker"
+
+    dependsOn(tasks.named('createDockerfile'))
+
+    inputDir.set(dockerBuildDir)
+
+    images.add(dockerTag)
+}
+
+composeUp.dependsOn(dockerBuildImage)
+
+dockerCompose {
+    useComposeFiles = ["docker-compose.yml"]
+}

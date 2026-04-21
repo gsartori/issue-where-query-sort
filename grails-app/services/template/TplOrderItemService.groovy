@@ -1,0 +1,132 @@
+package template
+
+import dueuno.audit.AuditOperation
+import dueuno.audit.AuditService
+import dueuno.types.Money
+import grails.gorm.DetachedCriteria
+import grails.gorm.multitenancy.CurrentTenant
+import grails.gorm.transactions.Transactional
+import groovy.contracts.Requires
+import groovy.transform.CompileDynamic
+import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
+import jakarta.annotation.PostConstruct
+
+@Slf4j
+@CurrentTenant
+@CompileStatic
+class TplOrderItemService {
+
+    AuditService auditService
+    TplOrderService tplOrderService
+
+    @PostConstruct
+    void init() {
+        // Executes only once when the application starts
+    }
+
+    @CompileDynamic
+    private DetachedCriteria<TTplOrderItem> buildQuery(Map filterParams) {
+        def query = TTplOrderItem.where {}
+
+        if (filterParams.containsKey('id')) query = query.where { id == filterParams.id }
+        if (filterParams.containsKey('order')) query = query.where { order.id == filterParams.order }
+
+        if (filterParams.find) {
+            String search = filterParams.find.replaceAll('\\*', '%')
+            query = query.where {
+                true
+                        || product.name =~ "%${search}%"
+            }
+        }
+
+        // Add additional filters here
+
+        return query
+    }
+
+    private Map getFetchAll() {
+        // Add any relationship here (Eg. references to other DomainObjects or hasMany)
+        return [
+                'relationshipName': 'join',
+
+                // hasMany relationships
+                'hasManyRelationship': 'join',
+        ]
+    }
+
+    private Map getFetch() {
+        // Add only single-sided relationships here (Eg. references to other Domain Objects)
+        // DO NOT add hasMany relationships, you are going to have troubles with pagination
+        return [
+                'relationshipName': 'join',
+        ]
+    }
+
+    TTplOrderItem get(Serializable id) {
+        return buildQuery(id: id).get(fetch: fetchAll)
+    }
+
+    List<TTplOrderItem> list(Map filterParams = [:], Map fetchParams = [:]) {
+        if (!fetchParams.sort) fetchParams.sort = [dateCreated: 'asc']
+        if (!fetchParams.fetch) fetchParams.fetch = fetch
+
+        def query = buildQuery(filterParams)
+        return query.list(fetchParams)
+    }
+
+    Number count(Map filterParams = [:]) {
+        def query = buildQuery(filterParams)
+        return query.count()
+    }
+
+    @Transactional
+    TTplOrderItem create(Map args = [:]) {
+        if (args.failOnError == null) args.failOnError = false
+
+        TTplOrderItem obj = new TTplOrderItem(args)
+        obj.save(flush: true, failOnError: args.failOnError)
+
+        if (!obj.hasErrors()) {
+            obj.price = new Money(obj.unitPrice * obj.quantity)
+            obj.save(flush: true, failOnError: args.failOnError)
+        }
+
+        tplOrderService.update(
+                id: obj.order.id,
+                total: obj.order.items ? obj.order.items*.price.sum() : obj.price,
+        )
+
+        return obj
+    }
+
+    @Transactional
+    @CompileDynamic
+    @Requires({ args.id })
+    TTplOrderItem update(Map args = [:]) {
+        if (args.failOnError == null) args.failOnError = false
+
+        TTplOrderItem obj = get(args.id)
+        obj.properties = args
+        obj.save(flush: true, failOnError: args.failOnError)
+
+        if (!obj.hasErrors()) {
+            obj.price = obj.unitPrice * obj.quantity
+            obj.save(flush: true, failOnError: args.failOnError)
+        }
+
+        tplOrderService.update(
+                id: obj.order.id,
+                total: obj.order.items ? obj.order.items*.price.sum() : obj.price,
+        )
+
+        return obj
+    }
+
+    @Transactional
+    void delete(Serializable id) {
+        TTplOrderItem obj = get(id)
+        obj.delete(flush: true, failOnError: true)
+        auditService.log(AuditOperation.DELETE, obj)
+    }
+}

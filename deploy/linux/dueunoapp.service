@@ -1,0 +1,15 @@
+# Copy to: /etc/systemd/system
+
+[Unit]
+Description=dueunoapp
+After=syslog.target
+
+[Service]
+User=dueunoapp
+WorkingDirectory=/home/dueunoapp
+ExecStart=/bin/bash /home/dueunoapp/start
+ExecStop=/bin/bash /home/dueunoapp/stop
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,54 @@
+dataSource:
+  pooled: true
+  jmxExport: true
+  driverClassName: com.ibm.as400.access.AS400JDBCDriver
+  dialect: org.hibernate.dialect.DB2400Dialect
+
+  url: jdbc:as400://localhost
+  username: USERNAME
+  password: PASSWORD
+
+  properties:
+    jmxEnabled: true
+    initialSize: 5
+    maxActive: 50
+    minIdle: 5
+    maxIdle: 25
+    maxWait: 10000
+    maxAge: 600000
+    timeBetweenEvictionRunsMillis: 5000
+    minEvictableIdleTimeMillis: 60000
+    validationQuery: SELECT 1 FROM sysibm.sysdummy1 #Valid for DB2
+    validationQueryTimeout: 3
+    validationInterval: 15000
+    testOnBorrow: true
+    testWhileIdle: true
+    testOnReturn: false
+    jdbcInterceptors: ConnectionState
+    defaultTransactionIsolation: 2 # TRANSACTION_READ_COMMITTED
+
+# If you get this error:
+#
+#     SQL7008 -(table) in (file) not valid for the operation
+#
+# You need to activate the journaling. Execute the following commands on AS/400
+# substituting {LIBRARY} and {FILE} with the library and file names:
+#
+# CRTJRNRCV JRNRCV({LIBRARY}/{CV_FILE}) THRESHOLD(1000000000)
+# RTJRN JRN({LIBRARY}/{JRN_FILE}) JRNRCV({LIBRARY}/{CV_FILE})
+# STRJRNPF FILE({LIBRARY}/*ALL) JRN({LIBRARY}/{JRN_FILE})
+#
+# See: http://www.querytool.com/help/876.htm
+
+environments:
+  development:
+    dataSource:
+      dbCreate: create-drop
+
+  test:
+    dataSource:
+      dbCreate: update
+
+  production:
+    dataSource:
+      dbCreate: update

@@ -1,0 +1,44 @@
+dataSource:
+  pooled: true
+  jmxExport: true
+  driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver
+  dialect: org.hibernate.dialect.SQLServer2008Dialect # for MS SQL server 2008 and onward
+  #dialect: org.hibernate.dialect.SQLServerDialect #only for 2000 and 2005
+
+  url: jdbc:sqlserver://localhost\instance_name:1433;databaseName=database_name
+  username: sa
+  password:
+
+  properties:
+    jmxEnabled: true
+    initialSize: 5
+    maxActive: 50
+    minIdle: 5
+    maxIdle: 25
+    maxWait: 10000
+    maxAge: 600000
+    timeBetweenEvictionRunsMillis: 5000
+    minEvictableIdleTimeMillis: 60000
+    validationQuery: "SELECT 1"
+    validationQueryTimeout: 3
+    validationInterval: 15000
+    testOnBorrow: true
+    testWhileIdle: true
+    testOnReturn: false
+    jdbcInterceptors: "ConnectionState;StatementCache(max=200)"
+    defaultTransactionIsolation: 2
+
+environments:
+  development:
+    dataSource:
+      dbCreate: create-drop
+
+  test:
+    dataSource:
+      dbCreate: update
+
+  production:
+    dataSource:
+      dbCreate: update
+
+

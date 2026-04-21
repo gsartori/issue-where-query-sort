@@ -1,0 +1,50 @@
+# Create DB with:
+# CREATE DATABASE database_name CHARACTER SET utf8 COLLATE utf8_general_ci;
+
+# Create USER with:
+# CREATE USER myuser@localhost IDENTIFIED BY 'MyPassword';
+# GRANT ALL ON mydatabase.* TO myuser@localhost;
+# GRANT CREATE ON *.* TO myuser@localhost;
+dataSource:
+  pooled: true
+  jmxExport: true
+  driverClassName: com.mysql.cj.jdbc.Driver
+  dialect: org.hibernate.dialect.MySQL5Dialect
+
+  url: jdbc:mysql://localhost:3306/dueuno?useSSL=false&createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=UTF-8
+  username: root
+  password: root
+
+  properties:
+    jmxEnabled: true
+    initialSize: 5
+    maxActive: 50
+    minIdle: 5
+    maxIdle: 25
+    maxWait: 10000
+    maxAge: 600000
+    timeBetweenEvictionRunsMillis: 5000
+    minEvictableIdleTimeMillis: 60000
+    validationQuery: "SELECT 1"
+    validationQueryTimeout: 3
+    validationInterval: 15000
+    testOnBorrow: true
+    testWhileIdle: true
+    testOnReturn: false
+    jdbcInterceptors: "ConnectionState;StatementCache(max=200)"
+    defaultTransactionIsolation: 2
+
+environments:
+  development:
+    dataSource:
+      dbCreate: update
+
+  test:
+    dataSource:
+      dbCreate: update
+
+  production:
+    dataSource:
+      dbCreate: update
+
+

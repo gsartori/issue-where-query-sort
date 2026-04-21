@@ -1,0 +1,242 @@
+package template
+
+import dueuno.commons.utils.LogUtils
+import dueuno.elements.ElementsController
+import dueuno.elements.components.*
+import dueuno.elements.contents.ContentCreate
+import dueuno.elements.contents.ContentEdit
+import dueuno.elements.contents.ContentTable
+import dueuno.elements.controls.MoneyField
+import dueuno.elements.controls.QuantityField
+import dueuno.elements.controls.Select
+import dueuno.elements.controls.TextField
+import dueuno.elements.style.TextDefault
+import dueuno.elements.style.TextStyle
+import dueuno.types.QuantityUnit
+import grails.plugin.springsecurity.annotation.Secured
+import groovy.util.logging.Slf4j
+import jakarta.annotation.PostConstruct
+
+@Slf4j
+@Secured(['ROLE_USER', /* other ROLE_... */])
+class TplOrderController implements ElementsController {
+
+    TplCompanyService tplCompanyService
+    TplProductService tplProductService
+    TplOrderService tplOrderService
+    TplOrderItemService tplOrderItemService
+
+    @PostConstruct
+    void init() {
+        // Executes only once when the application starts
+    }
+
+    def handleException(Exception e) {
+        // Display a popup message instead of the "Error" screen
+        log.error LogUtils.logStackTrace(e)
+        display exception: e
+    }
+
+    def index() {
+        def c = createContent(ContentTable)
+        c.table.with {
+            filters.with {
+                addField(
+                        class: TextField,
+                        id: 'find',
+                        label: TextDefault.FIND,
+                        cols: 12,
+                )
+            }
+            sortable = [
+                    dateCreated: 'desc',
+            ]
+            columns = [
+                    'ref',
+                    'subject',
+                    'supplier',
+                    'client',
+                    'total',
+            ]
+
+            body.eachRow { TableRow row, Map values ->
+                // Do not execute slow operations here to avoid slowing down the table rendering
+            }
+        }
+
+        c.table.body = tplOrderService.list(c.table.filterParams, c.table.fetchParams)
+        c.table.paginate = tplOrderService.count(c.table.filterParams)
+
+        display content: c
+    }
+
+    private buildForm(TTplOrder obj = null, Boolean readonly = false) {
+        def c = obj
+                ? createContent(ContentEdit)
+                : createContent(ContentCreate)
+
+        if (obj) {
+            c.header.addBackButton(action: 'index', icon: 'fa-times', text: '')
+        }
+
+        if (readonly) {
+            c.header.removeNextButton()
+            c.form.readonly = true
+        }
+
+        c.form.with {
+            validate = TTplOrder
+            addField(
+                    class: Select,
+                    id: 'supplier',
+                    optionsFromRecordset: tplCompanyService.list(isOwned: true),
+                    cols: 6,
+            )
+            addField(
+                    class: Select,
+                    id: 'client',
+                    optionsFromRecordset: tplCompanyService.list(isClient: true),
+                    cols: 6,
+            )
+            addField(
+                    class: TextField,
+                    id: 'ref',
+                    cols: 3,
+            )
+            addField(
+                    class: TextField,
+                    id: 'subject',
+                    cols: 9,
+            )
+        }
+
+        if (obj) {
+            def itemForm = c.addComponent(Form, 'itemForm')
+            itemForm.with {
+                validate = TTplOrderItem
+                addKeyField('order', obj.id)
+                addField(
+                        class: Separator,
+                        id: 'items',
+                        icon: 'fa-cart-shopping',
+                        squeeze: true,
+                        cols: 12,
+                )
+                addField(
+                        class: Select,
+                        id: 'product',
+                        optionsFromRecordset: tplProductService.list(),
+                        cols: 6,
+                )
+                addField(
+                        class: QuantityField,
+                        id: 'quantity',
+                        defaultUnit: QuantityUnit.PCS,
+                        cols: 2,
+                )
+                addField(
+                        class: MoneyField,
+                        id: 'unitPrice',
+                        cols: 2,
+                )
+                addField(
+                        class: Button,
+                        id: 'btnAddItem',
+                        action: 'onAddItem',
+                        params: [id: obj.id],
+                        submit: ['itemForm'],
+                        icon: 'fa-plus',
+                        cols: 2,
+                )
+            }
+
+            def table = c.addComponent(Table)
+            table.with {
+                sortable = [
+                        dateCreated: 'asc',
+                ]
+                columns = [
+                        'product',
+                        'unitPrice',
+                        'quantity',
+                        'price',
+                ]
+
+                actions.defaultAction.controller = 'tplOrderItem'
+                actions.defaultAction.params = [embeddedController: 'tplOrder', embeddedAction: 'edit', embeddedId: obj.id]
+                actions.tailAction.controller = 'tplOrderItem'
+                actions.tailAction.params = [embeddedController: 'tplOrder', embeddedAction: 'edit', embeddedId: obj.id]
+
+                body.eachRow { TableRow row, Map values ->
+                }
+
+                footer.eachRow { TableRow row, Map values ->
+                    row.textStyle = TextStyle.BOLD
+                }
+
+                def filters = filters.values
+                filters.order = obj.id
+                body = tplOrderItemService.list(filters)
+                footer = [
+                        [price: obj.total],
+                ]
+                paginate = tplOrderItemService.count(filters)
+            }
+
+            c.form.values = obj
+        }
+
+        return c
+    }
+
+    def onAddItem() {
+        def obj = tplOrderItemService.create(params)
+        if (obj.hasErrors()) {
+            display errors: obj
+            return
+        }
+
+        display action: 'edit', params: [id: params.id], modal: true
+    }
+
+    def create() {
+        def c = buildForm()
+        display content: c, modal: true
+    }
+
+    def onCreate() {
+        def obj = tplOrderService.create(params)
+        if (obj.hasErrors()) {
+            display errors: obj
+            return
+        }
+
+        display action: 'edit', params: [id: obj.id], modal: true
+    }
+
+    def edit() {
+        def obj = tplOrderService.get(params.id)
+        def c = buildForm(obj)
+        display content: c, modal: true, wide: true, closeButton: false
+    }
+
+    def onEdit() {
+        def obj = tplOrderService.update(params)
+        if (obj.hasErrors()) {
+            display errors: obj
+            return
+        }
+
+        display action: 'index'
+    }
+
+    def onDelete() {
+        try {
+            tplOrderService.delete(params.id)
+            display action: 'index'
+
+        } catch (e) {
+            display exception: e
+        }
+    }
+}

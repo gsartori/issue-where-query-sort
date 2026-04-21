@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+# Used in Jenkins after uploading the '/deploy/linux' directory on server
+echo "Preparing Fedora/RHEL/CentOS host..."
+
+echo "Installing Java..."
+sudo dnf -y install java-17-openjdk
+
+echo "Configuring iptables..."
+sudo systemctl disable firewalld
+sudo systemctl stop firewalld
+sudo dnf -y install iptables-services
+sudo systemctl enable iptables
+sudo systemctl start iptables
+
+echo "Configuring firewall rules..."
+
+# Reset
+sudo iptables -P INPUT ACCEPT
+sudo iptables -P FORWARD ACCEPT
+sudo iptables -P OUTPUT ACCEPT
+sudo iptables -t nat -F
+sudo iptables -t mangle -F
+sudo iptables -F
+sudo iptables -X
+
+# Block all by default
+sudo iptables -P INPUT DROP
+sudo iptables -P FORWARD DROP
+
+# Accept on localhost
+sudo iptables -A INPUT -i lo -j ACCEPT
+sudo iptables -A OUTPUT -o lo -j ACCEPT
+
+# Allow established sessions to receive traffic
+sudo iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+sudo iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+# Allow SSH
+sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+sudo iptables -A OUTPUT -p tcp --dport 22 -m state --state ESTABLISHED -j ACCEPT
+
+# Allow web services (HTTP and HTTPS)
+sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 8080 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 8443 -j ACCEPT
+
+# Redirect HTTP and HTTPS traffic to custom ports
+sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080
+sudo iptables -t nat -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 8443
+
+echo "Saving firewall rules..."
+sudo bash -c "iptables-save > /etc/sysconfig/iptables"

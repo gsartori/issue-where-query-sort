@@ -1,0 +1,198 @@
+dataSource:
+  pooled: true
+  jmxExport: true
+  driverClassName: org.h2.Driver
+  username: sa
+  password: ''
+  url: jdbc:h2:mem:devDb;LOCK_TIMEOUT=10000;DB_CLOSE_ON_EXIT=TRUE
+
+  properties:
+    jmxEnabled: true
+    initialSize: 5
+    maxActive: 50
+    minIdle: 5
+    maxIdle: 25
+    maxWait: 10000
+    maxAge: 600000
+    timeBetweenEvictionRunsMillis: 5000
+    minEvictableIdleTimeMillis: 60000
+    validationQuery: SELECT 1
+    validationQueryTimeout: 3
+    validationInterval: 15000
+    testOnBorrow: true
+    testWhileIdle: true
+    testOnReturn: false
+    jdbcInterceptors: ConnectionState
+    defaultTransactionIsolation: 2 # TRANSACTION_READ_COMMITTED
+
+dataSources:
+#  sqlServer_example:
+#    pooled: true
+#    jmxExport: true
+#    driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver
+#    dialect: org.hibernate.dialect.SQLServerDialect
+#
+#    properties:
+#      jmxEnabled: true
+#      initialSize: 5
+#      maxActive: 50
+#      minIdle: 5
+#      maxIdle: 25
+#      maxWait: 10000
+#      maxAge: 600000
+#      timeBetweenEvictionRunsMillis: 5000
+#      minEvictableIdleTimeMillis: 60000
+#      validationQuery: "SELECT 1"
+#      validationQueryTimeout: 3
+#      validationInterval: 15000
+#      testOnBorrow: true
+#      testWhileIdle: true
+#      testOnReturn: false
+#      jdbcInterceptors: "ConnectionState;StatementCache(max=200)"
+#      defaultTransactionIsolation: 2
+#
+#  mySql_example:
+#    pooled: true
+#    jmxExport: true
+#    driverClassName: com.mysql.cj.jdbc.Driver
+#    dialect: org.hibernate.dialect.MySQL5Dialect
+#
+#    properties:
+#      jmxEnabled: true
+#      initialSize: 5
+#      maxActive: 50
+#      minIdle: 5
+#      maxIdle: 25
+#      maxWait: 10000
+#      maxAge: 600000
+#      timeBetweenEvictionRunsMillis: 5000
+#      minEvictableIdleTimeMillis: 60000
+#      validationQuery: "SELECT 1"
+#      validationQueryTimeout: 3
+#      validationInterval: 15000
+#      testOnBorrow: true
+#      testWhileIdle: true
+#      testOnReturn: false
+#      jdbcInterceptors: "ConnectionState;StatementCache(max=200)"
+#      defaultTransactionIsolation: 2
+#
+#  sqlLite_example:
+#    pooled: true
+#    jmxExport: true
+#    driverClassName: org.sqlite.JDBC
+#    dialect: org.hibernate.dialect.SQLiteDialect
+#
+#    properties:
+#      jmxEnabled: true
+#      initialSize: 5
+#      maxActive: 50
+#      minIdle: 5
+#      maxIdle: 25
+#      maxWait: 10000
+#      maxAge: 600000
+#      timeBetweenEvictionRunsMillis: 5000
+#      minEvictableIdleTimeMillis: 60000
+#      validationQuery: "SELECT 1"
+#      validationQueryTimeout: 3
+#      validationInterval: 15000
+#      testOnBorrow: true
+#      testWhileIdle: true
+#      testOnReturn: false
+#      jdbcInterceptors: "ConnectionState"
+#      defaultTransactionIsolation: TRANSACTION_READ_UNCOMMITTED
+#
+#  as400_example:
+#    pooled: true
+#    jmxExport: true
+#    driverClassName: com.ibm.as400.access.AS400JDBCDriver
+#    dialect: org.hibernate.dialect.DB2400Dialect
+#
+#    properties:
+#      jmxEnabled: true
+#      initialSize: 5
+#      maxActive: 50
+#      minIdle: 5
+#      maxIdle: 25
+#      maxWait: 10000
+#      maxAge: 600000
+#      timeBetweenEvictionRunsMillis: 5000
+#      minEvictableIdleTimeMillis: 60000
+#      validationQuery: SELECT 1 FROM sysibm.sysdummy1 #Valid for DB2
+#      validationQueryTimeout: 3
+#      validationInterval: 15000
+#      testOnBorrow: true
+#      testWhileIdle: true
+#      testOnReturn: false
+#      jdbcInterceptors: ConnectionState
+#      defaultTransactionIsolation: 2 # TRANSACTION_READ_COMMITTED
+#
+environments:
+  development:
+    dataSource:
+      dbCreate: create-drop
+
+    dataSources:
+#      sqlServer_example:
+#        dbCreate: update
+#        url: jdbc:sqlserver://localhost\instance_name:1433;databaseName=database_name
+#        username: sa
+#        password:
+#      mySql_example:
+#        dbCreate: create-drop
+#        url: jdbc:mysql://localhost:3306/database_name?useSSL=false&useUnicode=true&characterEncoding=UTF-8
+#        username: root
+#        password:
+#      sqlLite_example:
+#        url: jdbc:sqlite:C:\\mydatabase.db
+#      as400_example:
+#        dbCreate: update
+#        url: jdbc:as400://192.168.100.236
+#        username: USERNAME
+#        password: PASSWORD
+
+  test:
+    dataSource:
+      dbCreate: update
+
+    dataSources:
+#      sqlServer_example:
+#        dbCreate: update
+#        url: jdbc:sqlserver://localhost\instance_name:1433;databaseName=database_name
+#        username: sa
+#        password:
+#      mySql_example:
+#        dbCreate: update
+#        url: jdbc:mysql://localhost:3306/database_name?useSSL=false&useUnicode=true&characterEncoding=UTF-8
+#        username: root
+#        password:
+#      sqlLite_example:
+#        url: jdbc:sqlite:C:\\mydatabase.db
+#      as400_example:
+#        dbCreate: update
+#        url: jdbc:as400://192.168.100.236
+#        username: USERNAME
+#        password: PASSWORD
+
+  production:
+    dataSource:
+      dbCreate: update
+
+    dataSources:
+#      sqlServer_example:
+#        dbCreate: update
+#        url: jdbc:sqlserver://localhost\instance_name:1433;databaseName=database_name
+#        username: sa
+#        password:
+#      mySql_example:
+#        dbCreate: update
+#        url: jdbc:mysql://localhost:3306/database_name?useSSL=false&useUnicode=true&characterEncoding=UTF-8
+#        username: root
+#        password:
+#      sqlLite_example:
+#        url: jdbc:sqlite:C:\\mydatabase.db
+#      as400_example:
+#        dbCreate: update
+#        url: jdbc:as400://192.168.100.236
+#        username: USERNAME
+#        password: PASSWORD
+
