@@ -33,8 +33,7 @@ class WorkAssignmentService {
         if (filterParams.containsKey('id')) query = query.where { id == filterParams.id }
         if (filterParams.containsKey('individual')) query = query.where { individual.id == filterParams.individual }
         if (filterParams.containsKey('workPackage.code')) query = query.where {
-            def wp = workPackage
-            wp.code == filterParams.'workPackage.code'
+            workPackage.code == filterParams.'workPackage.code'
         }
         if (filterParams.containsKey('validFrom')) query = query.where { validFrom == filterParams.validFrom }
         if (filterParams.containsKey('validTo')) query = query.where { validTo == filterParams.validTo }
